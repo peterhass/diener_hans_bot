@@ -8,10 +8,7 @@ defmodule DienerHansBot.ReminderSender do
     def send_now(%{chat_id: chat_id, message: message} = reminder) do
       Logger.debug fn -> {"[#{__MODULE__}] Sending reminder: #{inspect(reminder)}", []} end 
 
-      # TODO: make reminder look nicer
-      Nadia.send_message(chat_id, "i want to remind you of ...")
-      Nadia.send_message(chat_id, message)
-
+      Nadia.send_message(chat_id, "Reminder: #{message}")
     end
   end
 

@@ -13,14 +13,14 @@ defmodule DienerHansBot.ReminderClock do
     def init_state, do: %{jobs: []}
 
     def add_reminder(state, %Reminder{date: run_at} = reminder) do
-      Logger.debug fn -> "[#{__MODULE__}] Schedule reminder for #{DateTime.to_string(run_at)}: #{inspect(reminder)}" end
+      Logger.debug fn -> "[#{__MODULE__}] Schedule reminder for #{Timex.format!(run_at, "{ISO:Extended}")}: #{inspect(reminder)}" end
       add_job(state, %Job{run_at: run_at, type: :reminder, payload: reminder})
     end
 
     def add_job(%{jobs: jobs} = state, %Job{} = job) do
       new_jobs =
         (jobs ++ [job])
-        |> Enum.sort_by(&(&1.run_at), &(DateTime.compare(&1, &2) == :gt))
+        |> Enum.sort_by(&(&1.run_at), &(Timex.after?(&1, &2)))
 
       {:ok, %{state | jobs: new_jobs}}
     end
@@ -35,15 +35,15 @@ defmodule DienerHansBot.ReminderClock do
     defp _pop_jobs(result, jobs, datetime) do
       {job, remaining_jobs} = List.pop_at(jobs, 0)
 
-      if is_job_due(job, datetime) do
+      if job_due?(job, datetime) do
         _pop_jobs(result ++ [job], remaining_jobs, datetime)
       else
         {result, jobs}
       end
     end
 
-    defp is_job_due(job, _datetime) when is_nil(job), do: false
-    defp is_job_due(%{run_at: run_at}, datetime), do: DateTime.compare(datetime, run_at) == :gt
+    defp job_due?(job, _datetime) when is_nil(job), do: false
+    defp job_due?(%{run_at: run_at}, datetime), do: Timex.after?(datetime, run_at) 
 
     def send_pending_reminder(state, datetime) do
       {new_state, pending_jobs} = pop_jobs(state, datetime)
@@ -73,7 +73,7 @@ defmodule DienerHansBot.ReminderClock do
 
   @impl true
   def handle_info(:work, state) do
-    {:ok, new_state} = ServerImpl.send_pending_reminder(state, DateTime.utc_now)
+    {:ok, new_state} = ServerImpl.send_pending_reminder(state, Timex.now)
 
     schedule_tick()
     {:noreply, new_state}

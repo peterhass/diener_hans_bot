@@ -31,5 +31,6 @@ config :logger, level: :debug
 
 
 # https://github.com/zhyu/nadia
+# TODO: move token elsewhere, don't check it in (pls don't hack my bot buddy :(    ))
 config :nadia,
   token: "667978535:AAEiCGUa8IH0ma3qNLKISxRCKIYUtjZkkXM"
